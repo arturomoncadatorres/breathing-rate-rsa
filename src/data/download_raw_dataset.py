@@ -50,6 +50,8 @@ def main(url='https://physionet.org/static/published-projects/fantasia/fantasia-
     os.rmdir(Path(output_filepath)/filename)
 
     logger.info("Unzipping is complete!")
+    
+    return None
 
 
 
