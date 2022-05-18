@@ -3,6 +3,15 @@ Estimating Breathing Rate from Respiratory Sinus Arrythmia
 
 (Python) implementation of the paper ["Estimation of Breathing Rate from Respiratory Sinus Arrhythmia: Comparison of Various Methods"](https://link.springer.com/article/10.1007/s10439-007-9428-1) by Schafer and Kratky (2008).
 
+## :bar_chart: Content
+* [2 - Data pre-processing](https://github.com/arturomoncadatorres/breathing-rate-rsa/blob/main/notebooks/02-preprocessing.ipynb)
+
+## :world_map: Roadmap
+* Automate data pre-processing
+* Analyze data
+
+
+
 Project Organization
 ------------
 

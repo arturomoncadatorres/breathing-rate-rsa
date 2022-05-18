@@ -145,7 +145,7 @@ ax[1].set_ylabel("Respiration [mV]")
 #
 # Notice how "the minima of the NN curve generally occur near the inspirational 
 # maxima of breathing activity and *vice versa*".
-# 
+#
 # The rest of the pre-processing consists in splitting the original
 # signals into parts of 5 min length, which isn't particularly interesting
 # to showcase in this notebook.
