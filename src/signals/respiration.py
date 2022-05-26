@@ -39,7 +39,7 @@ def smooth(respiration, nn_interp_x, from_time, to_time, Ts, T_int=0.2):
         
     References
     ----------
-    A. Schafer, K. W. Kratkly, "Estimation of Breathing Rate from Respiratory 
+    - A. Schafer, K. W. Kratkly, "Estimation of Breathing Rate from Respiratory 
     Sinus Arrhythmia: Comparison of Various Methods", 2008.
     """
     

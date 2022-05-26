@@ -25,9 +25,12 @@ requirements: test_environment
 	$(PYTHON_INTERPRETER) -m pip install -U pip setuptools wheel
 	$(PYTHON_INTERPRETER) -m pip install -r requirements.txt
 
-## Make Dataset
+## Make dataset
 download_raw_dataset: requirements
 	$(PYTHON_INTERPRETER) src/data/download_raw_dataset.py https://physionet.org/static/published-projects/fantasia/fantasia-database-1.0.0.zip ./data/raw
+	
+preprocess_raw_dataset: requirements
+	$(PYTHON_INTERPRETER) src/data/preprocess_raw_dataset.py ./data/raw ./data/processed
 	
 data: requirements
 	$(PYTHON_INTERPRETER) src/data/make_dataset.py data/raw data/processed
