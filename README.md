@@ -7,6 +7,7 @@ Estimating Breathing Rate from Respiratory Sinus Arrythmia
 * [2 - Data pre-processing](https://github.com/arturomoncadatorres/breathing-rate-rsa/blob/main/notebooks/02-preprocessing.ipynb)
 
 ## :world_map: Roadmap
+* Data exploration
 * Automate data pre-processing
 * Analyze data
 
