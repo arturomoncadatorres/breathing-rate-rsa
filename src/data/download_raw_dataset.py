@@ -13,9 +13,30 @@ from dotenv import find_dotenv, load_dotenv
 @click.argument('url')
 @click.argument('output_filepath', type=click.Path(exists=False))
 def main(url='https://physionet.org/static/published-projects/fantasia/fantasia-database-1.0.0.zip', output_filepath='./data/raw'):
-    """ Runs data scripts to download data from a URL and
-        save it into output_filepath (../raw).
-    """
+    """ 
+    Runs data scripts to download the raw data files.
+    
+    Parameters
+    ----------
+    url: string
+        Physionet URL of the Fantasia database
+    output_filepath: string or pathlib.Path
+        Location where the raw dataset files will be saved
+        
+    Returns
+    -------
+    None. Files are written in output_filepath
+        
+    References
+    ----------
+    - A. Schafer, K. W. Kratkly, "Estimation of Breathing Rate from Respiratory 
+    Sinus Arrhythmia: Comparison of Various Methods", 2008.
+    - Iyengar, Nikhil, et al. "Age-related alterations in the fractal scaling 
+    of cardiac interbeat interval dynamics." American Journal of 
+    Physiology-Regulatory, Integrative and Comparative Physiology 271.4 
+    (1996): R1078-R1084.
+    """    
+    
     logger = logging.getLogger(__name__)
     logger.info('Downloading raw dataset from ' + url + '...')
 
