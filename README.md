@@ -8,7 +8,7 @@ Estimating Breathing Rate from Respiratory Sinus Arrythmia
 
 ## :world_map: Roadmap
 * Data exploration
-* Automate data pre-processing
+* Select segments with N annotations only
 * Analyze data
 
 
