@@ -7,6 +7,7 @@ Functions for manipulation of the respiration signal.
 """
 
 import numpy as np
+import src.utils.helpers as helpers
 
 #%%
 def smooth(respiration, nn_interp_x, from_time, to_time, Ts, T_int=0.2):
@@ -58,8 +59,7 @@ def smooth(respiration, nn_interp_x, from_time, to_time, Ts, T_int=0.2):
     for ii, value in enumerate(nn_interp_x):
         
         # Find the closest index corresponding to the time of the original signal.
-        diff_array = np.absolute(t - value)
-        idx = diff_array.argmin()
+        idx = helpers.find_closest_idx(t, value)
         
         # Get the indexes around +/- T_int/2
         # Notice how they are bounded to avoid going below or above
