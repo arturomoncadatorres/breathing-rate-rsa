@@ -121,7 +121,13 @@ def main(input_filepath='./data/raw/', output_filepath='./data/processed/', T_in
             dataset['respiration_smooth_x_trimmed_' + str(win_length_m)] = respiration_smooth_x_trimmed
             dataset['respiration_smooth_y_trimmed_' + str(win_length_m)] = respiration_smooth_y_trimmed
         
-        
+            nn_interp_x_trimmed = list(librosa.util.frame(nn_interp_x, frame_length=win_length_samples_resp_smooth, hop_length=win_length_samples_resp_smooth, axis=0))
+            nn_interp_y_trimmed = list(librosa.util.frame(nn_interp_y, frame_length=win_length_samples_resp_smooth, hop_length=win_length_samples_resp_smooth, axis=0))
+            respiration_smooth_x_trimmed = list(librosa.util.frame(respiration_smooth_x, frame_length=win_length_samples_resp_smooth, hop_length=win_length_samples_resp_smooth, axis=0))
+            respiration_smooth_y_trimmed = list(librosa.util.frame(respiration_smooth_y, frame_length=win_length_samples_resp_smooth, hop_length=win_length_samples_resp_smooth, axis=0))
+            dataset['nn_interp_x_trimmed_' + str(win_length_m)] = nn_interp_x_trimmed
+            dataset['nn_interp_y_trimmed_' + str(win_length_m)] = nn_interp_y_trimmed
+            
         # Pack output and save in .pkl.
         logger.info('\t\tPacking the rest of the output...')    
         dataset['id'] = participant_id
