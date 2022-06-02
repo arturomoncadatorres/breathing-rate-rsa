@@ -11,6 +11,9 @@ Sinus Arrhythmia: Comparison of Various Methods", 2008.
 import numpy as np
 import scipy as sp
 import spectrum
+from statsmodels import api as sm
+# from statsmodels.graphics.tsaplots import plot_acf
+
 import matplotlib as mpl
 from matplotlib import pyplot as plt
 
@@ -110,6 +113,7 @@ def spec_ft(nn, fs, f_low=0.1, f_high=0.5, visualizations=False):
         ax.set_ylabel("$| Xm |$")
         ax.spines['right'].set_visible(False)
         ax.spines['top'].set_visible(False)
+        plt.show()
     else:
         fig = np.nan
         ax = np.nan
@@ -226,6 +230,7 @@ def spec_ar(nn, fs, f_low=0.1, f_high=0.5, visualizations=False):
         ax.set_ylabel("$| Xm |^2$")
         ax.spines['right'].set_visible(False)
         ax.spines['top'].set_visible(False)
+        plt.show()
     else:
         fig = np.nan
         ax = np.nan
@@ -266,4 +271,44 @@ def acf_max(nn, fs, f_low=0.1, f_high=0.5, visualizations=False):
     Sinus Arrhythmia: Comparison of Various Methods", 2008.
     """
     
-    return None
+    acf = sm.tsa.acf(nn, nlags=len(nn))
+    lags = np.arange(len(acf))
+    
+    # Perform interpolation to improve resolution.
+    # The paper doesn't give particular specifications of the interpolation,
+    # so we will just make the resolution x10 better.
+    cs = sp.interpolate.CubicSpline(lags, acf)
+    lags_interp = np.arange(0, len(lags), 1/10)
+    acf_interp = cs(lags_interp)
+    
+    
+    # Find the peaks of the ACF.
+    peaks, _ = sp.signal.find_peaks(acf_interp)
+    
+    # Find the first peak of the ACF.
+    peak_loc = peaks[0]
+    peak = acf_interp[peak_loc]
+    
+    # Compute breathing rate.
+    # Notice we divide by an additional factor of 10 due to to the
+    # interpolation.
+    breathing_rate = peak_loc * (1/(fs*10))
+    
+    if visualizations:
+        fig, ax = plt.subplots(1, 1, figsize=[7,5])
+        plt.plot(lags_interp, acf_interp)
+        plt.plot(lags_interp[peaks[1:]], acf_interp[peaks[1:]], 'ro')
+        plt.plot(lags_interp[peak_loc], peak, 'r*', markersize=10)
+        ax.set_xlabel("Lag [samples]")
+        ax.set_ylabel("ACF")
+        ax.spines['right'].set_visible(False)
+        ax.spines['top'].set_visible(False)     
+        plt.show()
+    
+    else:
+        fig = np.nan
+        ax = np.nan
+        
+    return breathing_rate, fig, ax
+
+
