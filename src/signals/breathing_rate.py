@@ -227,7 +227,7 @@ def spec_ar(nn, fs, f_low=0.1, f_high=0.5, visualizations=False):
         plt.axvline(x=f_high, color=[0.6, 0.6, 0.6], linestyle='--')
         plt.axhline(y=10*np.log10(threshold), color=[0.6, 0.6, 0.6], linestyle=':')
         ax.set_xlabel("Frequency [Hz]")
-        ax.set_ylabel("$| Xm |^2$")
+        ax.set_ylabel("PSD [dB]")
         ax.spines['right'].set_visible(False)
         ax.spines['top'].set_visible(False)
         plt.show()
@@ -312,3 +312,102 @@ def acf_max(nn, fs, f_low=0.1, f_high=0.5, visualizations=False):
     return breathing_rate, fig, ax
 
 
+#%%
+def acf_adv(nn, fs, f_low=0.1, f_high=0.5, visualizations=False):
+    """ 
+    Compute the breathing rate using the Autocorrelation Advanced method
+    (ACF-adv in the original paper).
+    
+    Parameters
+    ----------
+    nn:
+    fs: float [Hz]
+        Sampling rate
+    f_low, f_high: float [Hz]
+        Bottom/top boundaries of the band of interest.
+        Defaults to 0.1 and 0.5 Hz, as suggested in the original paper.
+    visualizations: Boolean
+        Define if plots will be generated (True) or not (False, default)
+    
+        
+    Returns
+    -------
+    breathing_rate: float
+        Computed breathing rate. If conditions are not met,
+        this could be a np.nan
+    fig, ax: matplotlib figure and axes
+        If visualizations is set to False, these will be np.nan
+    
+        
+    References
+    ----------
+    - A. Schafer, K. W. Kratkly, "Estimation of Breathing Rate from Respiratory 
+    Sinus Arrhythmia: Comparison of Various Methods", 2008.
+    """
+    
+    # Calculate the differences of subsequent intervals
+    nn_shifted = nn[1:]
+    nn_shifted = np.append(nn_shifted, np.nan) # Note that we need to append a NaN at the end to match the length.
+    nn_delta = nn_shifted - nn
+    nn_delta = nn_delta[:-1]
+    
+    # Compute the ACF for all lags |delta| <= n/2
+    acf = sm.tsa.acf(nn_delta, nlags=len(nn)//2)
+    
+    
+    # Important parameters
+    N = len(nn) # Number of points
+    Ts = 1/fs # Sampling period
+    
+    # Compute the FFT
+    fft = sp.fft.fft(acf, N)
+    
+    # Compute the magnitude spectrum (and limit it to the positive side)
+    fft_mag = np.abs(fft[:N//2])
+    
+    # Remove DC component (f = 0).
+    # Notice that this isn't explicitely mentioned in the paper, but
+    # I believe it makes senes to remove it, since we didn't perform
+    # any pre-processing to remove it.
+    fft_mag[0] = 0
+    
+    # Compute the PSD (with proper scaling).
+    psd = fft_mag ** 2    
+    psd_scaled = psd / (fs * N)
+    psd_scaled[1:-1] = 2 * psd_scaled[1:-1]
+    
+    
+    # Compute the frequency axis (and limit it to the positive side)
+    f = sp.fft.fftfreq(N, Ts)[:N//2]
+    
+    # Find band of interest.
+    f_low_idx = helpers.find_closest_idx(f, f_low)
+    f_high_idx = helpers.find_closest_idx(f, f_high)
+    f_band = f[f_low_idx:f_high_idx]
+    
+    # Compute the median of the PSD in the band of interest
+    psd_band = psd[f_low_idx:f_high_idx]
+    psd_band_median = np.median(psd_band)
+    
+    # Compute the weighted average of the frequency band of relevance.
+    f_relevant = f_band[psd_band > psd_band_median]
+    psd_band_weighted = psd_band[psd_band > psd_band_median] / np.sum(psd_band[psd_band > psd_band_median])
+    breathing_rate = np.sum(f_relevant * psd_band_weighted)
+
+    if visualizations:
+        fig, ax = plt.subplots(1, 1, figsize=[7,5])
+        plt.plot(f, 10*np.log10(psd))
+        plt.plot(f_band, 10*np.log10(psd_band))
+        plt.axvline(x=f_low, color=[0.6, 0.6, 0.6], linestyle='--')
+        plt.axvline(x=f_high, color=[0.6, 0.6, 0.6], linestyle='--')
+        plt.axvline(x=breathing_rate, color=np.array([20, 102, 84])/255., linestyle='--')
+        plt.axhline(y=10*np.log10(psd_band_median), color=[0.6, 0.6, 0.6], linestyle=':')
+        ax.set_xlabel("Frequency [Hz]")
+        ax.set_ylabel("PSD [dB]")
+        ax.spines['right'].set_visible(False)
+        ax.spines['top'].set_visible(False)     
+    else:
+        fig = np.nan
+        ax = np.nan
+        
+    return breathing_rate, fig, ax
