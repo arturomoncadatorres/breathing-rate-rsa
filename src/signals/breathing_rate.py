@@ -13,6 +13,7 @@ import scipy as sp
 import spectrum
 from statsmodels import api as sm
 # from statsmodels.graphics.tsaplots import plot_acf
+import itertools
 
 import matplotlib as mpl
 from matplotlib import pyplot as plt
@@ -332,9 +333,8 @@ def acf_adv(nn, fs, f_low=0.1, f_high=0.5, visualizations=False):
         
     Returns
     -------
-    breathing_rate: float
-        Computed breathing rate. If conditions are not met,
-        this could be a np.nan
+    breathing_rate: float [Hz]
+        Computed breathing rate. 
     fig, ax: matplotlib figure and axes
         If visualizations is set to False, these will be np.nan
     
@@ -406,6 +406,289 @@ def acf_adv(nn, fs, f_low=0.1, f_high=0.5, visualizations=False):
         ax.set_ylabel("PSD [dB]")
         ax.spines['right'].set_visible(False)
         ax.spines['top'].set_visible(False)     
+    else:
+        fig = np.nan
+        ax = np.nan
+        
+    return breathing_rate, fig, ax
+
+
+#%%
+def count_orig(sig, fs, f_low=0.1, f_high=0.5, visualizations=False):
+    """ 
+    Compute the breathing rate using the Original Counting method
+    (Count-orig in the original paper).
+    
+    Parameters
+    ----------
+    sig:
+    fs: float [Hz]
+        Sampling rate
+    f_low, f_high: float [Hz]
+        Bottom/top boundaries of the band of interest.
+        Defaults to 0.1 and 0.5 Hz, as suggested in the original paper.
+    visualizations: Boolean
+        Define if plots will be generated (True) or not (False, default)
+    
+        
+    Returns
+    -------
+    breathing_rate: float
+        Computed breathing rate. If conditions are not met,
+        this could be a np.nan
+    fig, ax: matplotlib figure and axes
+        If visualizations is set to False, these will be np.nan
+    
+        
+    References
+    ----------
+    - A. Schafer, K. W. Kratkly, "Estimation of Breathing Rate from Respiratory 
+    Sinus Arrhythmia: Comparison of Various Methods", 2008.
+    """
+    
+    #%%
+
+    # 1. Filter the signal of interest by a BPF.
+    b, a = sp.signal.butter(6, [f_low, f_high], btype='bandpass', analog=False, fs=fs)
+    w, h = sp.signal.freqz(b, a, fs=fs)
+    
+    sig_filtered = sp.signal.filtfilt(b, a, sig)
+      
+    
+    # 2. Find local maxima and minima.
+    maxima_loc, _ = sp.signal.find_peaks(sig_filtered)
+    maxima = sig_filtered[maxima_loc]
+    
+    minima_loc, _ = sp.signal.find_peaks(-sig_filtered)
+    minima = sig_filtered[minima_loc]
+    
+
+    # 3. Find threshold
+    q3 = np.percentile(maxima, 75)
+    threshold = q3 * 0.2
+
+
+    # 4. Find valid breathing cycles
+    maxima_valid = maxima[maxima > threshold]
+    maxima_valid_loc = maxima_loc[maxima > threshold]
+    
+    segments_valid = []
+    for ii, maximum_valid_loc in enumerate(maxima_valid_loc[:-1]):
+
+        maximum_valid_loc2 = maxima_valid_loc[ii+1]
+        
+        # Check for exactly one minimum...
+        minima_bool = (minima_loc > maximum_valid_loc) & (minima_loc < maximum_valid_loc2)
+        if sum(minima_bool) != 1:
+            continue
+        
+        # ...below zero
+        minimum = minima[(minima_loc > maximum_valid_loc) & (minima_loc < maximum_valid_loc2)][0]
+        if minimum >= 0:
+            continue
+        
+        # Check for no other local extrema (i.e., other local maxima)
+        maxima_bool = (maxima_loc > maximum_valid_loc) & (maxima_loc < maximum_valid_loc2)
+        if sum(maxima_bool) > 0:
+            continue
+        
+        # If the segment passed all conditions, we know it is valid.
+        idx = np.arange(maximum_valid_loc, maximum_valid_loc2, 1)
+        segment = {'idx':idx, 'values':sig_filtered[idx], 'n':len(idx)}
+        
+        segments_valid.append(segment)
+
+        
+    # 5. Compute the breathing rate as the reciprocal of the average of 
+    # all detected respiratory cycles.
+    mean_n = sum(x['n'] for x in segments_valid) / len(segments_valid)
+    mean_n_s = mean_n / fs # [samples] --> [s]
+    breathing_rate = 1/mean_n_s        
+        
+    if visualizations:
+        fig, ax = plt.subplots(2, 1, figsize=[7,5], sharex=True)
+        ax[0].plot(np.arange(0, len(sig_filtered))/fs, sig_filtered, color='C0', linewidth=2)
+        ax[0].plot(maxima_loc/fs, maxima, marker='o', color='0.75', markersize=4, linestyle='None')
+        ax[0].plot(maxima_valid_loc/fs, maxima_valid, marker='o', color='red', markersize=4, linestyle='None')
+        ax[0].plot(minima_loc/fs, minima, marker='*', color='black', markersize=4, linestyle='None')
+        ax[0].axhline(y=0, color=[0.6, 0.6, 0.6], linestyle=':', linewidth=1)
+        ax[0].axhline(y=threshold, color=[0.6, 0.6, 0.6], linestyle='--', linewidth=1)
+        ax[0].spines['right'].set_visible(False)
+        ax[0].spines['top'].set_visible(False)    
+
+        for segment_valid in segments_valid:
+            ax[1].plot(segment_valid['idx']/fs, segment_valid['values'], color='C0', linewidth=2)      
+        ax[1].axhline(y=0, color=[0.6, 0.6, 0.6], linestyle=':', linewidth=1)
+        ax[1].axhline(y=threshold, color=[0.6, 0.6, 0.6], linestyle='--', linewidth=1)
+        ax[1].spines['right'].set_visible(False)
+        ax[1].spines['top'].set_visible(False)    
+        ax[1].set_xlabel('Time [s]')
+        fig.supylabel('Amplitude')
+
+        plt.show()
+    else:
+        fig = np.nan
+        ax = np.nan
+        
+    return breathing_rate, fig, ax
+    
+
+#%%
+def count_adv(sig, fs, f_low=0.1, f_high=0.5, signal_type='nn', visualizations=False):
+    """ 
+    Compute the breathing rate using the Advanced Counting method
+    (Count-adv in the original paper).
+    
+    Parameters
+    ----------
+    sig:
+    fs: float [Hz]
+        Sampling rate
+    f_low, f_high: float [Hz]
+        Bottom/top boundaries of the band of interest.
+        Defaults to 0.1 and 0.5 Hz, as suggested in the original paper.
+    signal_type: string
+        Type of signal given as an input. Possible values are
+            nn              NN interval (default)
+            resp            Respiration signal
+            respiration     Same as resp
+            
+        This is needed to choose the appropriate threshold (step 3)
+    visualizations: Boolean
+        Define if plots will be generated (True) or not (False, default)
+    
+        
+    Returns
+    -------
+    breathing_rate: float
+        Computed breathing rate. If conditions are not met,
+        this could be a np.nan
+    fig, ax: matplotlib figure and axes
+        If visualizations is set to False, these will be np.nan
+    
+        
+    References
+    ----------
+    - A. Schafer, K. W. Kratkly, "Estimation of Breathing Rate from Respiratory 
+    Sinus Arrhythmia: Comparison of Various Methods", 2008.
+    """
+    
+    #%%
+
+    # 1. Filter the signal of interest by a BPF.
+    b, a = sp.signal.butter(6, [f_low, f_high], btype='bandpass', analog=False, fs=fs)
+    w, h = sp.signal.freqz(b, a, fs=fs)
+    
+    sig_filtered = sp.signal.filtfilt(b, a, sig)
+
+    
+    # 2. Find local maxima and minima.
+    maxima_loc, _ = sp.signal.find_peaks(sig_filtered)
+    maxima = sig_filtered[maxima_loc]
+    
+    minima_loc, _ = sp.signal.find_peaks(-sig_filtered)
+    minima = sig_filtered[minima_loc]
+
+        
+    # 3. Calculate vertical differences and find threshold
+    # We assume that a maxima and minima alternate
+    
+    # First, we interweave the arrays. This allows us to calculate the
+    # differences very easily.
+    max_min = np.hstack(itertools.zip_longest(maxima, minima, fillvalue=np.nan)) 
+    
+    # In case the array lenghts are different, we will have a np.nan.
+    # We will remove it.
+    max_min = max_min[~np.isnan(max_min)]
+    
+    # We create a shifted copy of the difference array and perform the
+    # subtraction.
+    max_min_shifted = max_min[1:]
+    max_min_differences = max_min[:-1] - max_min_shifted
+    max_min_abs_differences = np.abs(max_min_differences)
+    
+    # Compute the threshold, which depends on the signal type.
+    q3 = np.quantile(max_min_abs_differences, 0.75)
+    if signal_type == 'nn':
+        threshold = q3 * 0.1
+    elif (signal_type == 'resp') or (signal_type == 'respiration'):
+        threshold = q3 * 0.3
+        
+    
+    # 4. Remove extrema pair until all differences are larger than the 
+    # threshold.
+    while sum(max_min_abs_differences < threshold):
+        
+        for ii, _ in enumerate(max_min[:-1]):
+            
+            # Compute the difference between min and max.
+            # If it is smaller than the threshold, kick out that segment
+            # by filling it with np.nan...
+            diff = max_min[ii] - max_min[ii+1]
+            if np.abs(diff) < threshold:
+                max_min[ii] = np.nan
+                max_min[ii+1] = np.nan
+
+        # ...and removing it at the end of the iteration.
+        max_min = max_min[~np.isnan(max_min)]
+               
+        # Compute the differences again to see if there are still differences
+        # smaller than the threshold. When there are none, we get out
+        # of the loop.
+        max_min_shifted = max_min[1:]
+        max_min_differences = max_min[:-1] - max_min_shifted
+        max_min_abs_differences = np.abs(max_min_differences)
+        
+        
+    # 5. Compute the breathing rate as the reciprocal of the average of 
+    # all detected respiratory cycles.
+    
+    # Untangle the max and min
+    maxima_valid_bool = np.isin(maxima, max_min)
+    maxima_valid_idx = maxima_loc[maxima_valid_bool]
+    maxima_valid = maxima[maxima_valid_bool]
+    
+    minima_valid_bool = np.isin(minima, max_min)
+    minima_valid_idx = minima_loc[minima_valid_bool]
+    minima_valid = minima[minima_valid_bool]
+        
+    # For consistency, we will use the same technique as in count_orig
+    segments_valid = []
+    for ii, maximum_valid_idx in enumerate(maxima_valid_idx[:-1]):
+    
+        maximum_valid_idx2 = maxima_valid_idx[ii+1]
+        
+        idx = np.arange(maximum_valid_idx, maximum_valid_idx2, 1)
+        segment = {'idx':idx, 'values':sig_filtered[idx], 'n':len(idx)}
+        
+        segments_valid.append(segment)
+
+    mean_n = sum(x['n'] for x in segments_valid) / len(segments_valid)
+    mean_n_s = mean_n / fs # [samples] --> [s]
+    breathing_rate = 1/mean_n_s        
+        
+    if visualizations:
+        fig, ax = plt.subplots(2, 1, figsize=[7,5], sharex=True)
+        ax[0].plot(np.arange(0, len(sig_filtered))/fs, sig_filtered, color='C0', linewidth=2)
+        ax[0].plot(maxima_loc/fs, maxima, marker='o', color='0.75', markersize=4, linestyle='None')
+        ax[0].plot(maxima_valid_idx/fs, maxima_valid, marker='o', color='red', markersize=4, linestyle='None')
+        ax[0].plot(minima_loc/fs, minima, marker='*', color='0.75', markersize=4, linestyle='None')
+        ax[0].plot(minima_valid_idx/fs, minima_valid, marker='*', color='black', markersize=4, linestyle='None')
+        ax[0].axhline(y=0, color=[0.6, 0.6, 0.6], linestyle=':', linewidth=1)
+        ax[0].axhline(y=threshold, color=[0.6, 0.6, 0.6], linestyle='--', linewidth=1)
+        ax[0].spines['right'].set_visible(False)
+        ax[0].spines['top'].set_visible(False)    
+    
+        for segment_valid in segments_valid:
+            ax[1].plot(segment_valid['idx']/fs, segment_valid['values'], color='C0', linewidth=2)      
+        ax[1].axhline(y=0, color=[0.6, 0.6, 0.6], linestyle=':', linewidth=1)
+        ax[1].axhline(y=threshold, color=[0.6, 0.6, 0.6], linestyle='--', linewidth=1)
+        ax[1].spines['right'].set_visible(False)
+        ax[1].spines['top'].set_visible(False)    
+        ax[1].set_xlabel('Time [s]')
+        fig.supylabel('Amplitude')
+    
+        plt.show()
     else:
         fig = np.nan
         ax = np.nan
