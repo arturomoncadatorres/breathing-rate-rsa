@@ -53,7 +53,7 @@ def spec_ft(nn, fs, f_low=0.1, f_high=0.5, visualizations=False):
     Sinus Arrhythmia: Comparison of Various Methods", 2008.
     - Heckmann, C., and D. Schenk. Klinisch-rhythmologische Aspekte der 
     Momentanherzfrequenz-Analyse aus dem 24-h-EKG. Herzmedizin 8:134–145, 1985
-    """    
+    """
     
     # Important parameters
     N = len(nn) # Number of points
