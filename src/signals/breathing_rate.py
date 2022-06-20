@@ -92,7 +92,7 @@ def spec_ft(nn, fs, f_low=0.1, f_high=0.5, visualizations=False):
     # The frequency of |Xm| is separated from the frequency of the
     # absolute maximum by <0.01 Hz.
     threshold = np.mean(fft_mag) + np.std(fft_mag)
-    xm_peak2 = np.partition(fft_mag.flatten(), -2)[-2]
+    xm_peak2 = np.partition(fft_mag[f_low_idx:f_high_idx].flatten(), -2)[-2]
     abs_max_f = f[np.argmax(fft_mag)]
     
     if (xm_peak > threshold) and (((xm_peak-xm_peak2) > xm_peak*0.01) or (np.abs(abs_max_f - breathing_rate_tmp)<0.01)):
@@ -101,17 +101,20 @@ def spec_ft(nn, fs, f_low=0.1, f_high=0.5, visualizations=False):
     # Otherwise, computed breathing rate is not valid.
     else:
         breathing_rate = np.nan
+        print("Breathing rate is not valid. Returning np.nan")
     
     # If needed, generate visualizations.
     if visualizations == True:
         fig, ax = plt.subplots(1, 1, figsize=[7,5])
         plt.plot(f, fft_mag)
-        plt.plot(breathing_rate_tmp, xm_peak, marker='o', color=[1,0,0])
-        plt.axvline(x=f_low, color=[0.6, 0.6, 0.6], linestyle='--')
-        plt.axvline(x=f_high, color=[0.6, 0.6, 0.6], linestyle='--')
-        plt.axhline(y=threshold, color=[0.6, 0.6, 0.6], linestyle=':')
+        plt.plot(breathing_rate_tmp, xm_peak, marker='o', color=[1,0,0], label="(Potential) frequency of breathing rate")
+        plt.axvline(x=f_low, color='green', linestyle='-', label="Frequency band of interest")
+        plt.axvline(x=f_high, color='green', linestyle='-')
+        plt.axhline(y=0, color=[0.6, 0.6, 0.6], linestyle=':', linewidth=1)
+        plt.axhline(y=threshold, color=[0.6, 0.6, 0.6], linestyle='--', label="Threshold (mean + 1 SD)")
         ax.set_xlabel("Frequency [Hz]")
         ax.set_ylabel("$| Xm |$")
+        ax.legend(loc='upper right')
         ax.spines['right'].set_visible(False)
         ax.spines['top'].set_visible(False)
         plt.show()
@@ -208,11 +211,11 @@ def spec_ar(nn, fs, f_low=0.1, f_high=0.5, visualizations=False):
     
     # Compute the mean breathing rate as the frequency component
     # in the band of interest (between 0.1 and 0.5 Hz) which exhibits
-    # a spectral power >=5.5% of the total power.
+    # a spectral power >=5.5% of the total power in the band.
     xm2_peak = np.max(psd_scaled[f_low_idx:f_high_idx])
     breathing_rate_tmp = f[psd_scaled == xm2_peak][0]
     
-    threshold = np.sum(psd_scaled) * 0.055
+    threshold = np.sum(psd_scaled[f_low_idx:f_high_idx]) * 0.055
     if xm2_peak > threshold:
         breathing_rate = breathing_rate_tmp
     else:
@@ -223,12 +226,14 @@ def spec_ar(nn, fs, f_low=0.1, f_high=0.5, visualizations=False):
         
         fig, ax = plt.subplots(1, 1, figsize=[7,5])
         plt.plot(f, 10*np.log10(psd_scaled))
-        plt.plot(breathing_rate_tmp, 10*np.log10(xm2_peak), marker='o', color=[1,0,0])
-        plt.axvline(x=f_low, color=[0.6, 0.6, 0.6], linestyle='--')
-        plt.axvline(x=f_high, color=[0.6, 0.6, 0.6], linestyle='--')
-        plt.axhline(y=10*np.log10(threshold), color=[0.6, 0.6, 0.6], linestyle=':')
+        plt.plot(breathing_rate_tmp, 10*np.log10(xm2_peak), marker='o', color=[1,0,0], label="(Possible) peak of breathing rate")
+        plt.axvline(x=f_low, color='green', linestyle='-', label="Frequency band of interest")
+        plt.axvline(x=f_high, color='green', linestyle='-')
+        plt.axhline(y=0, color=[0.6, 0.6, 0.6], linestyle=':', linewidth=1)
+        plt.axhline(y=10*np.log10(threshold), color=[0.6, 0.6, 0.6], linestyle='--', label="Threshold (5.5% of band power)")
         ax.set_xlabel("Frequency [Hz]")
         ax.set_ylabel("PSD [dB]")
+        ax.legend(loc='upper right')
         ax.spines['right'].set_visible(False)
         ax.spines['top'].set_visible(False)
         plt.show()
@@ -253,6 +258,8 @@ def acf_max(nn, fs, f_low=0.1, f_high=0.5, visualizations=False):
     f_low, f_high: float [Hz]
         Bottom/top boundaries of the band of interest.
         Defaults to 0.1 and 0.5 Hz, as suggested in the original paper.
+        These aren't used in this function, but are kept for consistency
+        with the other functions.
     visualizations: Boolean
         Define if plots will be generated (True) or not (False, default)
     
@@ -271,6 +278,7 @@ def acf_max(nn, fs, f_low=0.1, f_high=0.5, visualizations=False):
     - A. Schafer, K. W. Kratkly, "Estimation of Breathing Rate from Respiratory 
     Sinus Arrhythmia: Comparison of Various Methods", 2008.
     """
+    T_int = 1/fs
     
     acf = sm.tsa.acf(nn, nlags=len(nn))
     lags = np.arange(len(acf))
@@ -278,8 +286,9 @@ def acf_max(nn, fs, f_low=0.1, f_high=0.5, visualizations=False):
     # Perform interpolation to improve resolution.
     # The paper doesn't give particular specifications of the interpolation,
     # so we will just make the resolution x10 better.
+    interp_factor = 10
     cs = sp.interpolate.CubicSpline(lags, acf)
-    lags_interp = np.arange(0, len(lags), 1/10)
+    lags_interp = np.arange(0, len(lags), 1/interp_factor)
     acf_interp = cs(lags_interp)
     
     
@@ -291,17 +300,18 @@ def acf_max(nn, fs, f_low=0.1, f_high=0.5, visualizations=False):
     peak = acf_interp[peak_loc]
     
     # Compute breathing rate.
-    # Notice we divide by an additional factor of 10 due to to the
+    # Notice we divide by an additional factor due to to the
     # interpolation.
-    breathing_rate = peak_loc * (1/(fs*10))
+    breathing_rate = 1/(peak_loc * (T_int/interp_factor))
     
     if visualizations:
         fig, ax = plt.subplots(1, 1, figsize=[7,5])
-        plt.plot(lags_interp, acf_interp)
-        plt.plot(lags_interp[peaks[1:]], acf_interp[peaks[1:]], 'ro')
-        plt.plot(lags_interp[peak_loc], peak, 'r*', markersize=10)
+        plt.plot(lags_interp, acf_interp, label="ACF signal")
+        plt.plot(lags_interp[peaks[1:]], acf_interp[peaks[1:]], 'ro', label="Maxima")
+        plt.plot(lags_interp[peak_loc], peak, 'r*', markersize=10, label="First positive maximum")
         ax.set_xlabel("Lag [samples]")
         ax.set_ylabel("ACF")
+        ax.legend(loc='upper right')
         ax.spines['right'].set_visible(False)
         ax.spines['top'].set_visible(False)     
         plt.show()
