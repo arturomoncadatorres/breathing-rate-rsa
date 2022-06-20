@@ -223,14 +223,13 @@ def spec_ar(nn, fs, f_low=0.1, f_high=0.5, visualizations=False):
 
     # If needed, generate visualizations.
     if visualizations == True:
-        
         fig, ax = plt.subplots(1, 1, figsize=[7,5])
         plt.plot(f, 10*np.log10(psd_scaled))
         plt.plot(breathing_rate_tmp, 10*np.log10(xm2_peak), marker='o', color=[1,0,0], label="(Possible) peak of breathing rate")
         plt.axvline(x=f_low, color='green', linestyle='-', label="Frequency band of interest")
         plt.axvline(x=f_high, color='green', linestyle='-')
-        plt.axhline(y=0, color=[0.6, 0.6, 0.6], linestyle=':', linewidth=1)
-        plt.axhline(y=10*np.log10(threshold), color=[0.6, 0.6, 0.6], linestyle='--', label="Threshold (5.5% of band power)")
+        plt.axhline(y=0, color='0.6', linestyle=':', linewidth=1)
+        plt.axhline(y=10*np.log10(threshold), color='0.6', linestyle='--', label="Threshold (5.5% of band power)")
         ax.set_xlabel("Frequency [Hz]")
         ax.set_ylabel("PSD [dB]")
         ax.legend(loc='upper right')
@@ -309,6 +308,7 @@ def acf_max(nn, fs, f_low=0.1, f_high=0.5, visualizations=False):
         plt.plot(lags_interp, acf_interp, label="ACF signal")
         plt.plot(lags_interp[peaks[1:]], acf_interp[peaks[1:]], 'ro', label="Maxima")
         plt.plot(lags_interp[peak_loc], peak, 'r*', markersize=10, label="First positive maximum")
+        plt.axhline(y=0, color='0.6', linestyle=':', linewidth=1)
         ax.set_xlabel("Lag [samples]")
         ax.set_ylabel("ACF")
         ax.legend(loc='upper right')
@@ -406,14 +406,16 @@ def acf_adv(nn, fs, f_low=0.1, f_high=0.5, visualizations=False):
 
     if visualizations:
         fig, ax = plt.subplots(1, 1, figsize=[7,5])
-        plt.plot(f, 10*np.log10(psd))
-        plt.plot(f_band, 10*np.log10(psd_band))
-        plt.axvline(x=f_low, color=[0.6, 0.6, 0.6], linestyle='--')
-        plt.axvline(x=f_high, color=[0.6, 0.6, 0.6], linestyle='--')
-        plt.axvline(x=breathing_rate, color=np.array([20, 102, 84])/255., linestyle='--')
-        plt.axhline(y=10*np.log10(psd_band_median), color=[0.6, 0.6, 0.6], linestyle=':')
+        plt.plot(f, 10*np.log10(psd), label="PSD")
+        plt.axvline(x=f_low, color='green', linestyle='-', label="Frequency band of interest")
+        plt.plot(f_band, 10*np.log10(psd_band), label="PSD in freq. band of interest")
+        plt.axhline(y=10*np.log10(psd_band_median), color='0.6', linestyle=':', label="PSD median in freq. band of interest")
+        plt.axvline(x=f_high, color='green', linestyle='-')
+        plt.axvline(x=breathing_rate, color='red', linestyle='--', label="Mean breathing rate")
+        plt.axhline(y=0, color='0.6', linestyle=':', linewidth=1)
         ax.set_xlabel("Frequency [Hz]")
         ax.set_ylabel("PSD [dB]")
+        ax.legend(loc='upper right')
         ax.spines['right'].set_visible(False)
         ax.spines['top'].set_visible(False)     
     else:
@@ -517,19 +519,20 @@ def count_orig(sig, fs, f_low=0.1, f_high=0.5, visualizations=False):
         
     if visualizations:
         fig, ax = plt.subplots(2, 1, figsize=[7,5], sharex=True)
-        ax[0].plot(np.arange(0, len(sig_filtered))/fs, sig_filtered, color='C0', linewidth=2)
-        ax[0].plot(maxima_loc/fs, maxima, marker='o', color='0.75', markersize=4, linestyle='None')
-        ax[0].plot(maxima_valid_loc/fs, maxima_valid, marker='o', color='red', markersize=4, linestyle='None')
-        ax[0].plot(minima_loc/fs, minima, marker='*', color='black', markersize=4, linestyle='None')
-        ax[0].axhline(y=0, color=[0.6, 0.6, 0.6], linestyle=':', linewidth=1)
-        ax[0].axhline(y=threshold, color=[0.6, 0.6, 0.6], linestyle='--', linewidth=1)
+        ax[0].plot(np.arange(0, len(sig_filtered))/fs, sig_filtered, color='C0', linewidth=2, label="Filtered signal")
+        ax[0].axhline(y=threshold, color='0.6', linestyle='--', linewidth=1, label="Threshold")
+        ax[0].plot(maxima_loc/fs, maxima, marker='o', color='0.75', markersize=4, linestyle='None', label="Invalid maxima")
+        ax[0].plot(maxima_valid_loc/fs, maxima_valid, marker='o', color='red', markersize=4, linestyle='None', label="Valid maxima")
+        ax[0].plot(minima_loc/fs, minima, marker='*', color='black', markersize=4, linestyle='None', label="Minima")
+        ax[0].axhline(y=0, color='0.6', linestyle=':', linewidth=1)
+        ax[0].legend(bbox_to_anchor=(1.04,1), loc="upper left")
         ax[0].spines['right'].set_visible(False)
         ax[0].spines['top'].set_visible(False)    
 
         for segment_valid in segments_valid:
             ax[1].plot(segment_valid['idx']/fs, segment_valid['values'], color='C0', linewidth=2)      
-        ax[1].axhline(y=0, color=[0.6, 0.6, 0.6], linestyle=':', linewidth=1)
-        ax[1].axhline(y=threshold, color=[0.6, 0.6, 0.6], linestyle='--', linewidth=1)
+        ax[1].axhline(y=0, color='0.6', linestyle=':', linewidth=1)
+        ax[1].axhline(y=threshold, color='0.6', linestyle='--', linewidth=1)
         ax[1].spines['right'].set_visible(False)
         ax[1].spines['top'].set_visible(False)    
         ax[1].set_xlabel('Time [s]')
@@ -679,13 +682,15 @@ def count_adv(sig, fs, f_low=0.1, f_high=0.5, signal_type='nn', visualizations=F
         
     if visualizations:
         fig, ax = plt.subplots(2, 1, figsize=[7,5], sharex=True)
-        ax[0].plot(np.arange(0, len(sig_filtered))/fs, sig_filtered, color='C0', linewidth=2)
-        ax[0].plot(maxima_loc/fs, maxima, marker='o', color='0.75', markersize=4, linestyle='None')
-        ax[0].plot(maxima_valid_idx/fs, maxima_valid, marker='o', color='red', markersize=4, linestyle='None')
-        ax[0].plot(minima_loc/fs, minima, marker='*', color='0.75', markersize=4, linestyle='None')
-        ax[0].plot(minima_valid_idx/fs, minima_valid, marker='*', color='black', markersize=4, linestyle='None')
+        ax[0].plot(np.arange(0, len(sig_filtered))/fs, sig_filtered, color='C0', linewidth=2, label="Filtered signal")
+        ax[0].axhline(y=threshold, color=[0.6, 0.6, 0.6], linestyle='--', linewidth=1, label="Threshold")
+        ax[0].plot(maxima_loc/fs, maxima, marker='o', color='0.75', markersize=4, linestyle='None', label="Invalid maxima")
+        ax[0].plot(maxima_valid_idx/fs, maxima_valid, marker='o', color='red', markersize=4, linestyle='None', label="Valid maxima")
+        ax[0].plot(minima_loc/fs, minima, marker='*', color='0.75', markersize=4, linestyle='None', label="Invalid minima")
+        ax[0].plot(minima_valid_idx/fs, minima_valid, marker='*', color='black', markersize=4, linestyle='None', label="Valid minima")
         ax[0].axhline(y=0, color=[0.6, 0.6, 0.6], linestyle=':', linewidth=1)
-        ax[0].axhline(y=threshold, color=[0.6, 0.6, 0.6], linestyle='--', linewidth=1)
+        ax[0].legend(bbox_to_anchor=(1.04,1), loc="upper left")
+        
         ax[0].spines['right'].set_visible(False)
         ax[0].spines['top'].set_visible(False)    
     

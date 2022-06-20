@@ -15,10 +15,11 @@
 
 # %% [markdown]
 # # `02-preprocessing`
-# In this notebook, we showcase the pre-processing steps
+# In this notebook, we showcase the signals pre-processing steps.
 #
 # ## Preliminaries
 # Imports
+
 # %%
 import pathlib
 import wfdb
@@ -51,7 +52,7 @@ sample_to = 10_000
 # We can read a record with [`wfdb.rdrecord`](https://wfdb.readthedocs.io/en/latest/wfdb.html#wfdb.rdrecord),
 # annotations with [`wfdb.rdann`](https://wfdb.readthedocs.io/en/latest/wfdb.html#wfdb.rdann)
 # and easily plot them with [`wfdb.plot_wfdb`](https://wfdb.readthedocs.io/en/latest/wfdb.html#wfdb.plot_wfdb).
-# Notice how we some matplotlib for tweaking the plot.
+# We can use some matplotlib for tweaking the plot.
 #
 # Notice how in this case, the annotations correspond to the R peaks marked
 # on top of the respiration signal.
