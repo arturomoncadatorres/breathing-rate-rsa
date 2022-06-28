@@ -1,5 +1,5 @@
-# Estimating Breathing Rate from Respiratory Sinus Arrythmia
-The purpose of this repository is to provide the (Python) implementation of different methods to calculate (average) respiratory rate from heart rate variability, as shown in the paper 
+# Estimating Breathing Rate from Respiratory Sinus Arrhythmia
+The purpose of this repository is to provide the (Python) implementation of different methods to calculate (average) respiratory rate from heart rate variability, as shown in the paper
 
 > Schäfer, Axel, and Karl W. Kratky. ["Estimation of Breathing Rate from Respiratory Sinus Arrhythmia: Comparison of Various Methods"](https://link.springer.com/article/10.1007/s10439-007-9428-1), Annals of Biomedical Engineering 36.3 (2008): 476-485.
 
@@ -75,7 +75,7 @@ Although I am more or less done with the implementation of the algorithms and th
     │   ├── signals        <- Scripts to process different type of signals
     │   │
     │   ├── statistics     <- Scripts used for statistical evaluation of the different methods
-    │   │	
+    │   │
     │   └── visualization  <- Scripts to create exploratory and results oriented visualizations
     │
     └── tox.ini            <- tox file with settings for running tox; see tox.readthedocs.io
