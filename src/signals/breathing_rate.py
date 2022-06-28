@@ -108,8 +108,8 @@ def spec_ft(nn, fs, f_low=0.1, f_high=0.5, visualizations=False):
         fig, ax = plt.subplots(1, 1, figsize=[7,5])
         plt.plot(f, fft_mag)
         plt.plot(breathing_rate_tmp, xm_peak, marker='o', color=[1,0,0], label="(Potential) frequency of breathing rate")
-        plt.axvline(x=f_low, color='green', linestyle='-', label="Frequency band of interest")
-        plt.axvline(x=f_high, color='green', linestyle='-')
+        plt.axvline(x=f_low, color='darkorchid', linestyle='-', label="Frequency band of interest")
+        plt.axvline(x=f_high, color='darkorchid', linestyle='-')
         plt.axhline(y=0, color=[0.6, 0.6, 0.6], linestyle=':', linewidth=1)
         plt.axhline(y=threshold, color=[0.6, 0.6, 0.6], linestyle='--', label="Threshold (mean + 1 SD)")
         ax.set_xlabel("Frequency [Hz]")
@@ -179,7 +179,7 @@ def spec_ar(nn, fs, f_low=0.1, f_high=0.5, visualizations=False):
     # (and aligns with intuition, since DC component is not useful in this case).
     nn_detrended = nn_undersampled - np.mean(nn_undersampled)
     
-    # Generate an autoregressive model to obtain the powed spectrum 
+    # Generate an autoregressive model to obtain the power spectrum 
     # density (PSD) using a Burg algorithm with a model of order 15.
     # This is easily done using Spectrum.
     order = 15
@@ -226,8 +226,8 @@ def spec_ar(nn, fs, f_low=0.1, f_high=0.5, visualizations=False):
         fig, ax = plt.subplots(1, 1, figsize=[7,5])
         plt.plot(f, 10*np.log10(psd_scaled))
         plt.plot(breathing_rate_tmp, 10*np.log10(xm2_peak), marker='o', color=[1,0,0], label="(Possible) peak of breathing rate")
-        plt.axvline(x=f_low, color='green', linestyle='-', label="Frequency band of interest")
-        plt.axvline(x=f_high, color='green', linestyle='-')
+        plt.axvline(x=f_low, color='darkorchid', linestyle='-', label="Frequency band of interest")
+        plt.axvline(x=f_high, color='darkorchid', linestyle='-')
         plt.axhline(y=0, color='0.6', linestyle=':', linewidth=1)
         plt.axhline(y=10*np.log10(threshold), color='0.6', linestyle='--', label="Threshold (5.5% of band power)")
         ax.set_xlabel("Frequency [Hz]")
@@ -407,10 +407,10 @@ def acf_adv(nn, fs, f_low=0.1, f_high=0.5, visualizations=False):
     if visualizations:
         fig, ax = plt.subplots(1, 1, figsize=[7,5])
         plt.plot(f, 10*np.log10(psd), label="PSD")
-        plt.axvline(x=f_low, color='green', linestyle='-', label="Frequency band of interest")
-        plt.plot(f_band, 10*np.log10(psd_band), label="PSD in freq. band of interest")
+        plt.axvline(x=f_low, color='darkorchid', linestyle='-', label="Frequency band of interest")
+        plt.plot(f_band, 10*np.log10(psd_band), color='dodgerblue', label="PSD in freq. band of interest")
         plt.axhline(y=10*np.log10(psd_band_median), color='0.6', linestyle=':', label="PSD median in freq. band of interest")
-        plt.axvline(x=f_high, color='green', linestyle='-')
+        plt.axvline(x=f_high, color='darkorchid', linestyle='-')
         plt.axvline(x=breathing_rate, color='red', linestyle='--', label="Mean breathing rate")
         plt.axhline(y=0, color='0.6', linestyle=':', linewidth=1)
         ax.set_xlabel("Frequency [Hz]")
