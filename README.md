@@ -1,7 +1,7 @@
 # Estimating Breathing Rate from Respiratory Sinus Arrythmia
 The purpose of this repository is to provide the (Python) implementation of different methods to calculate (average) respiratory rate from heart rate variability, as shown in the paper 
 
-> Schäfer, Axel, and Karl W. Kratky. "["Estimation of Breathing Rate from Respiratory Sinus Arrhythmia: Comparison of Various Methods"](https://link.springer.com/article/10.1007/s10439-007-9428-1)" Annals of Biomedical Engineering 36.3 (2008): 476-485.
+> Schäfer, Axel, and Karl W. Kratky. ["Estimation of Breathing Rate from Respiratory Sinus Arrhythmia: Comparison of Various Methods"](https://link.springer.com/article/10.1007/s10439-007-9428-1), Annals of Biomedical Engineering 36.3 (2008): 476-485.
 
 Full credit goes to the authors.
 
